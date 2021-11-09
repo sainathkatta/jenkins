@@ -1,0 +1,36 @@
+currentBuild.displayName = "online-shopping-#"+currentBuild.number
+
+pipeline{
+    agent any
+    
+    environment{
+        PATH = "/opt/maven3/bin:$PATH"
+    }
+    stages{
+            stage("Git Checkout"){
+            steps{
+                git 'https://github.com/sainathkatta/myweb'
+            }
+        }
+        stage("Maven Build"){
+            steps{
+                sh "mvn clean package"
+                 }
+            }
+        stage("deploy-dev"){
+            steps{
+                sshagent(['tomcat-new']) {
+                sh """
+                    scp -o StrictHostKeyChecking=no target/myweb-8.3.2.war ec2-user@3.135.195.173:apache-tomcat-7.0.94/webapps/
+                    
+                    ssh ec2-user@3.135.195.173  apache-tomcat-7.0.94/bin/shutdown.sh
+                    
+                    ssh ec2-user@3.135.195.173  apache-tomcat-7.0.94/bin/startup.sh
+                
+                """
+            }
+            
+            }
+        }
+    }
+}
